@@ -5,13 +5,11 @@ from typing import Any, Dict, NamedTuple
 
 from models import SilpoBaseModel
 
-
 class QueryBuilder:
     def __init__(self):
         self.query = ""
         self.variables = {}
         self._mapping = {}
-
     def fetch_me(self) -> QueryBuilder: ...
     def fetch_cheques(
         self,
