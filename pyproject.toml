@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pysilpo"
-version = "0.1.0"
+version = "0.1.1"
 description = "UNOFFICIAL API client for Silpo (Ukrainian supermarket chain)"
 authors = ["iYasha <33287747+iYasha@users.noreply.github.com>"]
 readme = "README.md"
