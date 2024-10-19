@@ -67,6 +67,9 @@ print(cheques)
 
 ## Change Log
 
+### 0.1.2
+- Fix: `APIClient.get` might return None
+
 ### 0.1.1
 - Silpo changed API domain to graphql.silpo.ua
 
