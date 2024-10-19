@@ -67,6 +67,9 @@ print(cheques)
 
 ## Change Log
 
+### 0.0.2
+- Silpo changed API domain to graphql.silpo.ua
+
 ### 0.0.1
 - Initial release
 - Added support for new resource `Cheque History`, `Cheque Detail` and `User Info`
