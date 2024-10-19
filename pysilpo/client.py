@@ -138,8 +138,10 @@ class APIClient(metaclass=APIClientMeta):
         for key, value in data.items():
             if key in mapping:
                 model = mapping[key]
-                if isinstance(value, list):
-                    result[key] = [model(**item) for item in value]
+                if value is None:
+                    result[key] = None
+                elif isinstance(value, list):
+                    result[key] = [model(**item) for item in value if item]
                 else:
                     result[key] = model(**value)
             else:
