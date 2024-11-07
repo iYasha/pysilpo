@@ -1,5 +1,5 @@
 from enum import Enum
 
 
-class PayTypeEnum(str, Enum):
-    PAY_CARD_TYPE = "PAY_CARD_TYPE"
+class PayTypeEnum(int, Enum):
+    PAY_CARD_TYPE = 2
