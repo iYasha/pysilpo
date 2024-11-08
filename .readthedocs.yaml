@@ -1,0 +1,15 @@
+version: 2
+
+sphinx:
+  configuration: docs/source/conf.py  # Path to your Sphinx configuration file
+
+python:
+  install:
+    - requirements: docs/requirements.txt  # Path to your requirements file
+    - path: .
+
+# Optional settings
+build:
+  os: ubuntu-22.04  # Operating system
+  tools:
+    python: "3.11"
