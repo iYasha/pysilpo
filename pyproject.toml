@@ -1,16 +1,113 @@
-[tool.poetry]
-name = "pysilpo"
-version = "0.1.2"
-description = "UNOFFICIAL API client for Silpo (Ukrainian supermarket chain)"
-authors = ["iYasha <33287747+iYasha@users.noreply.github.com>"]
-readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.11"
-requests = "^2.31.0"
-pydantic = "^2.2.1"
-
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=65.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pysilpo"
+dynamic = ["version"]
+description = "UNOFFICIAL API client for Silpo (Ukrainian supermarket chain)"
+readme = "README.md"
+license = {file="LICENSE"}
+requires-python = ">=3.9"
+authors = [
+    { name = "iYasha" },
+]
+keywords = [
+    "pysilpo",
+    "silpo",
+    "ukraine",
+    "supermarket",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+#
+dependencies = [
+    "pydantic>=2.0,<3.0",  # Pydantic 2.0 supports Python 3.9 and above
+    "PyJWT>=2.8,<3.0"
+]
+
+[project.optional-dependencies]
+docs = [ "sphinx>=7"]
+
+[project.urls]
+Source = "https://github.com/iYasha/pysilpo"
+Tracker = "https://github.com/iYasha/pysilpo/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "pysilpo.__version__"}
+
+[tool.mypy]
+strict = true
+show_error_codes = true
+pretty = true
+disable_error_code = ["type-arg", "no-any-return"]
+
+[[tool.mypy.overrides]]
+module = ["test.*"]
+disable_error_code = ["no-untyped-def", "no-untyped-call"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "W", # flake8
+  "B",           # flake8-bugbear
+  "I",           # isort
+  "ARG",         # flake8-unused-arguments
+  "C4",          # flake8-comprehensions
+  "EM",          # flake8-errmsg
+  "ICN",         # flake8-import-conventions
+  "G",           # flake8-logging-format
+  "PGH",         # pygrep-hooks
+  "PIE",         # flake8-pie
+  "PL",          # pylint
+  "PTH",         # flake8-use-pathlib
+  "RET",         # flake8-return
+  "RUF",         # Ruff-specific
+  "S",           # flake8-bandit
+  "SIM",         # flake8-simplify
+  "T20",         # flake8-print
+  "UP",          # pyupgrade
+  "YTT",         # flake8-2020
+  "EXE",         # flake8-executable
+]
+ignore = [
+  "PLR",    # Design related pylint codes
+  "EM101",  # Exception must not use a string literal, assign to variable first
+  "EM102",  # Exception must not use an f-string literal, assign to variable first
+  "ARG002", # Unused method argument:
+  "S101",   # Use of `assert` detected
+  "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+  "PLW2901", # `for` loop variable `value` overwritten by assignment target
+]
+unfixable = []
+exclude = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?)|dummy.*)$"
+
+[tool.coverage.report]
+exclude_lines = [
+    "if (.*and +)*_use_c( and.*)*:",
+    "def has_c",
+    "def get_version_string",
+    "^except AttributeError:",
+    "except ImportError:",
+    "raise NotImplementedError",
+    "return NotImplemented",
+    "_use_c = true",
+    "if __name__ == '__main__':",
+    "if TYPE_CHECKING:"
+    ]
+partial_branches = ["if (.*and +)*not _use_c( and.*)*:"]
+
+[tool.coverage.html]
+directory = "htmlcov"
