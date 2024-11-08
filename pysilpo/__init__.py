@@ -2,6 +2,7 @@ import logging
 import os
 from pysilpo.authorization import User
 from pysilpo.cheque import Cheque
+from pysilpo.product import Product
 
 __version__ = "0.2.1"
 
