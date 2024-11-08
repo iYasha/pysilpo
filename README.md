@@ -32,40 +32,33 @@ pip install pysilpo
 
 ## Usage
 
-The library needs to be configured with your account access token, 
-which you can get from [Silpo](https://silpo.ua/).
-1. Login to your account
-2. Open developer tools in your browser
-3. Go to `Console` tab
-4. Execute this script
-```javascript
-const value = `; ${document.cookie}`;
-const parts = value.split(`; accessToken=`);
-if (parts.length === 2)
-    console.log("%c" + parts.pop().split(';').shift(), "font-size: 20px; color: green;");
-else
-    console.log("%cAccess token not found. Please make sure that you Logged in your account!", "font-size: 20px; color: red;")
-```
-5. Copy the output and use it as access token
-
-<i>Access token live only <b>90</b> days.</i>
-
 ```python
-import pysilpo
-from pysilpo.client import APIClient
+from pysilpo import User, Cheque
 from datetime import datetime
 
-pysilpo.api_key = "NDSyYmDwMHE5ODE0Z2JhYTU3HzQ3YzU5YjG2OTRjYTg"
+user = (
+    User(
+        phone_number="+380123456789",
+    )
+    .request_otp()
+    .login()
+)
 
-cheques = APIClient.fetch_cheques(
-    date_from=datetime(2023, 7, 19),
-    date_to=datetime(2023, 8, 19),
-).get()
+cheques = Cheque(user).get_all(
+    date_from=datetime(2024, 7, 19), date_to=datetime(2024, 8, 19)
+)
 
-print(cheques)
+for cheque in cheques:
+    print(cheque.sum_balance)
+    print(cheque.detail.positions)
 ```
 
 ## Change Log
+
+### 2.0.0
+- Added OpenID OTP authorization support with cached session and token refresh mechanism
+- Cheque API now more clear and using RestFul API
+- Debug mode now supported!
 
 ### 0.1.2
 - Fix: `APIClient.get` might return None

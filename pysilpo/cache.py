@@ -2,7 +2,9 @@ import pickle
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Union
 
+MAX_TS = round(datetime.max.replace(year=9998).timestamp())  # Maximum Unix timestamp
 
 class SQLiteCache:
     def __init__(self, db_name="cache.db", use_pickle=True):
@@ -58,9 +60,11 @@ class SQLiteCache:
             return value
         return None  # Not found
 
-    def set(self, key, value, expires_in: datetime | int):
+    def set(self, key, value, expires_in: Union[datetime, int, None] = None):
         """Store a value in the cache with an optional TTL."""
-        if isinstance(expires_in, int):
+        if expires_in is None:
+            expiry_time = MAX_TS
+        elif isinstance(expires_in, int):
             expiry_time = expires_in
         else:
             expiry_time = round(expires_in.timestamp())  # Convert datetime to Unix timestamp

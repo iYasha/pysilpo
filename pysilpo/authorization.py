@@ -38,7 +38,9 @@ class User:
 
     logger = get_logger("pysilpo.authorization.User")
     _base_auth_domain = "https://auth.silpo.ua"
-    _openid_configuration = urljoin(_base_auth_domain, "/.well-known/openid-configuration")
+    _openid_configuration = urljoin(
+        _base_auth_domain, "/.well-known/openid-configuration"
+    )
     _phone_number_pattern = r"^\+380\d{9}$"
 
     def __init__(
@@ -73,12 +75,22 @@ class User:
     def cached_token(self) -> Optional[Token]:
         return SQLiteCache().get(f"token_{self.phone_number}")
 
-    def request_otp(self, delivery_method: Optional[Literal["sms", "viber-sms"]] = None) -> "User":
-        if self.token:
+    def request_otp(
+        self, delivery_method: Optional[Literal["sms", "viber-sms"]] = None, force: bool = False
+    ) -> "User":
+        if self.token and not force:
             self.logger.debug(
                 "[request_otp] Already logged in with token scope. Skipping OTP request"
             )
             return self
+
+        auth_cookies = SQLiteCache().get(f"cookie_{self.phone_number}")
+        if auth_cookies and not force:
+            self.logger.debug(
+                "[request_otp] Have cookies for authorization. Skipping OTP request"
+            )
+            return self
+
         if delivery_method is None:
             delivery_method = self.otp_delivery_method
         full_url = urljoin(self._base_auth_domain, "/api/v2/Login/ByPhone")
@@ -99,7 +111,9 @@ class User:
                 )
                 time.sleep(json_data["secondsTillNextOTP"] + random.randint(1, 4))
                 return self.request_otp(delivery_method)
-            raise SilpoAuthorizationException(f"Error while requesting OTP: {json_data}")
+            raise SilpoAuthorizationException(
+                f"Error while requesting OTP: {json_data}"
+            )
         return self
 
     def _verify_otp(self, otp_code: str) -> "User":
@@ -124,9 +138,9 @@ class User:
         self.logger.debug(
             f"[_verify_otp] Received response: {json_data}. With cookies: {resp.cookies}"
         )
-        # TODO: Save cookies
         if not resp.ok or json_data["error"]:
             raise SilpoOTPInvalidException(f"Error while verifying OTP: {json_data}")
+        SQLiteCache().set(f"cookie_{self.phone_number}", dict(resp.cookies))
         return self
 
     @staticmethod
@@ -138,7 +152,7 @@ class User:
             break
         return otp_code
 
-    def _openid_authorize(self) -> str:
+    def _openid_authorize(self, auth_cookies: Optional[dict] = None) -> str:
         """
         This method authorizes user with OpenID Connect protocol.
         It sends a request to Silpo API to get authorization code.
@@ -148,7 +162,9 @@ class User:
         """
         full_url = self.openid_configuration["authorization_endpoint"]
         code_challenge = (
-            base64.urlsafe_b64encode(hashlib.sha256(self.code_verifier.encode()).digest())
+            base64.urlsafe_b64encode(
+                hashlib.sha256(self.code_verifier.encode()).digest()
+            )
             .rstrip(b"=")
             .decode("ascii")
         )
@@ -162,13 +178,14 @@ class User:
             "code_challenge_method": "S256",
             "response_mode": "query",
         }
-        self.logger.debug(f"[_openid_authorize] Authorizing with {params} to {full_url}")
-        resp = self.session.get(full_url, params=params)
+        self.logger.debug(
+            f"[_openid_authorize] Authorizing with {params} to {full_url}"
+        )
+        resp = self.session.get(full_url, params=params, cookies=auth_cookies)
         resp.raise_for_status()
         self.logger.debug(
             f"[_openid_authorize] Received location: {resp.url}. With headers: {resp.headers} and cookies: {resp.cookies}"
         )
-        # TODO: Save cookies [_verify_otp] or maybe here if we'll get one
 
         parsed_url = urlparse(resp.url)
         query_params = parse_qs(parsed_url.query)
@@ -176,7 +193,9 @@ class User:
         auth_code = query_params.get("code", [None])[0]
 
         if auth_code is None:
-            raise SilpoAuthorizationException("No auth code in response for OpenID authorization")
+            raise SilpoAuthorizationException(
+                "No auth code in response for OpenID authorization"
+            )
         return auth_code
 
     def _get_token(self, auth_code: str) -> Token:
@@ -194,14 +213,29 @@ class User:
         resp = self.session.post(full_url, data=form_data)
         json_data = resp.json()
         self.logger.debug(f"[_get_access_token] Received response: {json_data}")
-        if not resp.ok or json_data["error"]:
-            raise SilpoAuthorizationException(f"Error while getting access token: {json_data}")
+        if not resp.ok:
+            raise SilpoAuthorizationException(
+                f"Error while getting access token: {json_data}"
+            )
         return Token(**json_data)
 
     def is_expired(self) -> bool:
         if self.cached_token is None:
             return True
         return self.token.expires_in < datetime.now(tz=UTC)
+
+    def _refresh_token(self) -> None:
+        auth_cookies = SQLiteCache().get(f"cookie_{self.phone_number}")
+        if not auth_cookies:
+            raise SilpoAuthorizationException(
+                "No cookies found for token refresh."
+                "Please login first using User(phone_number=...).request_otp().login() method."
+            )
+        code = self._openid_authorize(auth_cookies)
+        self.token = self._get_token(code)
+        self.logger.debug(
+            f"[refresh_token] Token refreshed with scope: {self.token.scope} | {self.token.expires_in} UTC"
+        )
 
     @property
     def access_token(self) -> str:
@@ -211,8 +245,7 @@ class User:
                 "Please login first using User(phone_number=...).request_otp().login() method."
             )
         if self.is_expired():
-            # TODO: Add token refresh logic
-            raise SilpoAuthorizationException("Access token is expired!")
+            self._refresh_token()
         return self.token.access_token
 
     def set_token(self, token: Token) -> "User":
@@ -220,19 +253,25 @@ class User:
         self.logger.debug(
             f"[set_token] Set token scope: {self.token.scope} | {self.token.expires_in} UTC"
         )
-        SQLiteCache().set(f"token_{self.phone_number}", token, expires_in=token.expires_in)
+        SQLiteCache().set(
+            f"token_{self.phone_number}", token, expires_in=token.expires_in
+        )
         return self
 
-    def login(self, otp_code: Optional[str] = None) -> "User":
-        if self.token:
+    def login(self, otp_code: Optional[str] = None, force: bool = False) -> "User":
+        if self.token and not force:
             self.logger.debug(
                 f"[login] Already logged in with token scope: {self.token.scope} | {self.token.expires_in} UTC"
             )
             return self
-        if otp_code is None:
-            otp_code = self._enter_cli_otp()
-        self._verify_otp(otp_code)
-        auth_code = self._openid_authorize()
+
+        auth_cookies = SQLiteCache().get(f"cookie_{self.phone_number}")
+        if not auth_cookies and not force:
+            if otp_code is None:
+                otp_code = self._enter_cli_otp()
+            self._verify_otp(otp_code)
+
+        auth_code = self._openid_authorize(auth_cookies)
         self.token = self._get_token(auth_code)
         self.logger.debug(
             f"[login] Logged in with token scope: {self.token.scope} | {self.token.expires_in} UTC"
