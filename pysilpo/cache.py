@@ -1,10 +1,20 @@
 import pickle
 import sqlite3
-from datetime import UTC, datetime
+import sys
+from datetime import datetime
+
+if sys.version_info >= (3, 11):
+    from datetime import UTC
+else:
+    from datetime import timezone
+
+    UTC = timezone.utc
+
 from pathlib import Path
 from typing import Union
 
 MAX_TS = round(datetime.max.replace(year=9998).timestamp())  # Maximum Unix timestamp
+
 
 class SQLiteCache:
     def __init__(self, db_name="cache.db", use_pickle=True):
