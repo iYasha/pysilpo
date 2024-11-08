@@ -35,7 +35,7 @@ Here is a simple example of how to fetch all cheques for a user by date range:
 .. code-block:: python
 
    from pysilpo import User, Cheque
-    from datetime import datetime
+   from datetime import datetime
 
     user = (
         User(

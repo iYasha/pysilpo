@@ -2,6 +2,8 @@
 Debugging
 ==========
 
+.. _debugging:
+
 This section provides guidance on how to debug ``pysilpo``.
 
 Enable debug mode

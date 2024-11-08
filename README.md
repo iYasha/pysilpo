@@ -16,6 +16,8 @@
     <b>UNOFFICIAL</b> API client for Silpo (Ukrainian supermarket chain)
     <br />
     <br />
+    <a href="https://pysilpo.readthedocs.io">Documentation</a>
+    .
     <a href="https://github.com/iYasha/pysilpo/issues">Report Bug</a>
     ·
     <a href="https://github.com/iYasha/pysilpo/issues">Request Feature</a>
@@ -83,6 +85,9 @@ Don't forget to give the project a star! Thanks again!
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+## License
+Distributed under the Apache2 License. See `LICENSE` for more information.
+
 ## Contact
 If you have any questions, feel free to contact me via email: [ivan@simantiev.com](mailto:ivan@simantiev.com)
 
@@ -97,4 +102,4 @@ If you have any questions, feel free to contact me via email: [ivan@simantiev.co
 [issues-shield]: https://img.shields.io/github/issues/iyasha/pysilpo.svg?style=for-the-badge
 [issues-url]: https://github.com/iyasha/pysilpo/issues
 [license-shield]: https://img.shields.io/github/license/iyasha/pysilpo.svg?style=for-the-badge
-[license-url]: https://github.com/iyasha/pysilpo/blob/master/LICENSE
+[license-url]: https://github.com/iyasha/pysilpo/blob/main/LICENSE
