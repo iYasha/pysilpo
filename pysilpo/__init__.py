@@ -3,7 +3,7 @@ import os
 from pysilpo.authorization import User
 from pysilpo.cheque import Cheque
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 DEBUG = int(os.getenv("DEBUG", "0"))
 
