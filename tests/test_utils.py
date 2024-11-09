@@ -1,18 +1,16 @@
-from typing import Generator
-
 import pytest
-from pysilpo.utils import Cursor, RequestGenerator
+
+from pysilpo.utils import Cursor
 
 
-class DummyGenerator(RequestGenerator):
-
+class DummyGenerator:
     def __init__(self):
         self.values = range(23)
         self.limit = 5
         self.rounded_count = 25
 
-    def get(self, offset: int):
-        return list(self.values[offset:offset + self.limit]), len(self.values)
+    def __call__(self, _offset: int):
+        return list(self.values[_offset : _offset + self.limit]), len(self.values)
 
 
 @pytest.fixture
@@ -22,7 +20,6 @@ def cursor():
 
 
 class TestCursor:
-
     def test_create_cursor(self):
         generator = DummyGenerator()
         cursor = Cursor(generator=generator, page_size=generator.limit)
@@ -35,9 +32,9 @@ class TestCursor:
 
     def test_len(self, cursor):
         total_count = len(cursor.generator.values)
-        assert len(cursor) == total_count, 'Total count is not equal to len(cursor)'
-        assert cursor.total_count == total_count, 'Total count is not equal to len(cursor)'
-        assert cursor.rounded_count == cursor.generator.rounded_count, 'Round count is not equal to len(cursor)'
+        assert len(cursor) == total_count, "Total count is not equal to len(cursor)"
+        assert cursor.total_count == total_count, "Total count is not equal to len(cursor)"
+        assert cursor.rounded_count == cursor.generator.rounded_count, "Round count is not equal to len(cursor)"
         assert cursor.curr == 0
 
         # To know total_count we need to fetch at least one chunk
@@ -50,6 +47,10 @@ class TestCursor:
 
         assert list(cursor) == list(cursor.generator.values)
         assert cursor.curr == 0
+
+    def test_index(self, cursor):
+        assert cursor[-1] == list(cursor.generator.values)[-1]
+        assert cursor[-5] == list(cursor.generator.values)[-5]
 
     def test_first(self, cursor):
         total_count = len(cursor.generator.values)
@@ -71,13 +72,15 @@ class TestCursor:
         # To know total_count we need to fetch at least one chunk
         assert cursor.fetched_count == cursor.page_size
 
-        assert cursor[1:cursor.page_size * 2:2] == list(range(1, cursor.page_size * 2, 2))
+        assert cursor[1 : cursor.page_size * 2 : 2] == list(range(1, cursor.page_size * 2, 2))
         assert cursor.curr == 0
         assert cursor.total_count == total_count
         assert cursor.rounded_count == cursor.generator.rounded_count
 
         # To know total_count we need to fetch at least one chunk
         assert cursor.fetched_count == cursor.page_size * 2
+
+        assert cursor[5:1:-1] == [5, 4, 3, 2]
 
     def test_slice_only_start(self, cursor):
         total_count = len(cursor.generator.values)
@@ -93,7 +96,26 @@ class TestCursor:
         assert cursor.curr == 0
         assert cursor.total_count == total_count
         assert cursor.rounded_count == cursor.generator.rounded_count
-
-        # To know total_count we need to fetch at least one chunk
         assert cursor.fetched_count == cursor.page_size
 
+    def test_slice_only_step(self, cursor):
+        total_count = len(cursor.generator.values)
+        assert cursor[::2] == list(range(0, total_count, 2))
+        assert cursor.curr == 0
+        assert cursor.total_count == total_count
+        assert cursor.rounded_count == cursor.generator.rounded_count
+        assert cursor.fetched_count == total_count
+
+    def test_index_error(self, cursor):
+        with pytest.raises(IndexError):
+            cursor[1000]
+
+        assert cursor[1000:2000] == []
+
+        assert cursor[1000:2000:2] == []
+
+        assert cursor[1000:] == []
+
+        assert cursor[:1000] == list(cursor.generator.values)
+
+        assert cursor[1000::2] == []

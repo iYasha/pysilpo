@@ -1,11 +1,12 @@
 import logging
 import math
 from datetime import datetime, timedelta
-from typing import Union, TypeVar, Generic, List, Tuple
+from typing import Generic, Protocol, TypeVar, Union
 
 import jwt
 
 T = TypeVar("T")
+
 
 def get_logger(name: str = "PySilpo") -> logging.Logger:
     return logging.getLogger(name)
@@ -34,17 +35,13 @@ class Empty:
     pass
 
 
-class RequestGenerator(Generic[T]):
-    # TODO: Integrate Product and Cheque API services with this class
-
-    def get(self, offset: int) -> Tuple[List[T], int]:
-        return [], 0
-
+class Generator(Protocol):
+    def __call__(self, _offset: int) -> tuple[list[T], int]:
+        ...
 
 
 class Cursor(Generic[T]):
-
-    def __init__(self, generator: RequestGenerator, page_size: int):
+    def __init__(self, generator: Generator, page_size: int):
         self.generator = generator
         self.total_count = None
         self.rounded_count = None
@@ -53,20 +50,11 @@ class Cursor(Generic[T]):
         self.page_size = page_size
         self.curr = 0
 
-    def __len__(self) -> int:
-        """
-        Some API endpoints might return more items than they return in `total`
-        :return: Total count of fetched items if it's more than `total` or `total` otherwise
-        """
-        if self.total_count is None:
-            self.fetch_new_page(0)
-        return self.fetched_count if self.fetched_count >= self.total_count else self.total_count
-
     def fetch_new_page(self, index: int) -> list[T]:
         page_index = math.floor(index // self.page_size)
         if self.rounded_count is not None and index > self.rounded_count:
             raise IndexError
-        page_content, total_count = self.generator.get(offset=page_index * self.page_size)
+        page_content, total_count = self.generator(_offset=page_index * self.page_size)
         self.total_count = total_count
 
         # We need rounded count to know how many items we have in total, because we can't rely on total_count
@@ -79,7 +67,10 @@ class Cursor(Generic[T]):
         return self.pages[page_index]
 
     def get_page(self, index: int) -> list[T]:
-        return self.pages.get(math.floor(index // self.page_size), self.fetch_new_page(index))
+        try:
+            return self.pages[math.floor(index // self.page_size)]
+        except KeyError:
+            return self.fetch_new_page(index)
 
     def get(self, index: int) -> Union[T, Empty]:
         try:
@@ -87,9 +78,18 @@ class Cursor(Generic[T]):
         except IndexError:
             return Empty
 
+    def first(self) -> T:
+        return self[0]
+
     def __getitem__(self, index: Union[int, slice]) -> Union[list[T], T]:
         if isinstance(index, slice):
-            return [self.get(i) for i in range(index.start or 0, index.stop or len(self), index.step or 1) if self.get(i) is not Empty]
+            return [
+                self.get(i)
+                for i in range(index.start or 0, index.stop or len(self), index.step or 1)
+                if self.get(i) is not Empty
+            ]
+        if index < 0:
+            index = len(self) + index
         val = self.get(index)
         if val is Empty:
             raise IndexError
@@ -103,9 +103,18 @@ class Cursor(Generic[T]):
             val = self[self.curr]
         except IndexError:
             self.curr = 0
-            raise StopIteration
+            raise StopIteration from None
         self.curr += 1
         return val
 
-    def first(self) -> T:
-        return self[0]
+    def __len__(self) -> int:
+        """
+        Some API endpoints might return more items than they return in `total`
+        :return: Total count of fetched items if it's more than `total` or `total` otherwise
+        """
+        if self.total_count is None:
+            self.fetch_new_page(0)
+        return self.fetched_count if self.fetched_count >= self.total_count else self.total_count
+
+    def __repr__(self):
+        return f"<Cursor len={len(self)}> at {hex(id(self))}"

@@ -1,5 +1,6 @@
 import logging
 import os
+
 from pysilpo.authorization import User
 from pysilpo.cheque import Cheque
 from pysilpo.product import Product
@@ -14,4 +15,4 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-__all__ = ('__version__', 'User', 'Cheque')
+__all__ = ("__version__", "User", "Cheque", "Product")

@@ -29,7 +29,7 @@
 Use the package manager pip to install PySilpo.
 
 ```bash
-pip install pysilpo 
+pip install pysilpo
 ```
 
 ## Usage

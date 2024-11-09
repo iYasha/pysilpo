@@ -1,11 +1,12 @@
 from enum import Enum
-from typing import Optional, Literal, Generator, List
+from typing import Literal, Optional
 from urllib.parse import urljoin
 
 import requests
 from cryptography.utils import cached_property
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field
 
+from pysilpo.utils import Cursor
 
 
 class SortBy(str, Enum):
@@ -47,7 +48,6 @@ class ProductModel(BaseModel):
     blur_for_under_aged: bool = Field(..., alias="blurForUnderAged")
 
 
-
 class CategoryModel(BaseModel):
     id: str = Field(..., alias="id")
     slug: str = Field(..., alias="slug")
@@ -60,9 +60,8 @@ class CategoryModel(BaseModel):
     updated_at: str = Field(..., alias="updatedAt")
 
     @cached_property
-    def products(self) -> Generator[ProductModel, None, None]:
+    def products(self) -> Cursor[ProductModel]:
         return Product.get_all(category_slug=self.slug, include_child_categories=False)
-
 
 
 class Product:
@@ -73,11 +72,16 @@ class Product:
     _DEFAULT_BRANCH_ID = "00000000-0000-0000-0000-000000000000"
 
     @classmethod
-    def get_categories(cls, branch_id=_DEFAULT_BRANCH_ID) -> List[CategoryModel]:
+    def get_categories(cls, branch_id=_DEFAULT_BRANCH_ID) -> Cursor[CategoryModel]:
         full_url = cls._CATEGORIES_URL.format(branch_id=branch_id)
-        resp = requests.get(full_url)
-        resp.raise_for_status()
-        return [CategoryModel(**category) for category in resp.json()['items']]
+
+        def generator(_offset: int):
+            resp = requests.get(full_url, params={"limit": 1000, "offset": _offset})
+            resp.raise_for_status()
+            data = resp.json()
+            return [CategoryModel(**category) for category in data["items"]], data["total"]
+
+        return Cursor[CategoryModel](generator=generator, page_size=1000)
 
     @classmethod
     def get_all(
@@ -87,11 +91,13 @@ class Product:
         include_child_categories: bool = True,
         sort_by: SortBy = SortBy.POPULARITY,
         sort_direction: Literal["desc", "asc"] = "desc",
-        delivery_type: Optional[Literal["DeliveryHome", "LongDelivery", "SelfPickup", "DeliveryExpressByPromise"]] = None,
+        delivery_type: Optional[
+            Literal["DeliveryHome", "LongDelivery", "SelfPickup", "DeliveryExpressByPromise"]
+        ] = None,
         in_stock: bool = False,
         limit: int = 50,
         offset: int = 0,
-    ) -> Generator[ProductModel, None, None]:
+    ) -> Cursor[ProductModel]:
         """
 
         :param branch_id: Branch where to get products from
@@ -120,15 +126,11 @@ class Product:
         if delivery_type:
             query_params["deliveryType"] = delivery_type
 
-        total_count = limit
-
-        while offset < total_count:
-            query_params["offset"] = offset
+        def generator(_offset: int):
+            query_params["offset"] = _offset
             resp = requests.get(full_url, params=query_params)
             resp.raise_for_status()
             data = resp.json()
-            total_count = data["total"]
-            print(total_count)
-            for product in data["items"]:
-                yield ProductModel(**product)
-            offset += limit
+            return [ProductModel(**product) for product in data["items"]], data["total"]
+
+        return Cursor(generator=generator, page_size=limit)

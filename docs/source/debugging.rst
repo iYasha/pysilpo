@@ -2,7 +2,7 @@
 Debugging
 ==========
 
-.. _debugging:
+.. _debugging_section:
 
 This section provides guidance on how to debug ``pysilpo``.
 

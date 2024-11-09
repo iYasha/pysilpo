@@ -55,9 +55,7 @@ class User:
         phone_number: str,
         otp_delivery_method: Literal["sms", "viber-sms"] = "sms",
         openid_client_id: Optional[str] = "profile--profile--cabinet",
-        openid_scope: Optional[
-            str
-        ] = "openid public-my profile--security--identity-service:internal-api--call "
+        openid_scope: Optional[str] = "openid public-my profile--security--identity-service:internal-api--call "
         "core--core--media-service:media--upload payments--payments--wallet-service:cards--read-my "
         "core--core--media-service:media--upload",
         openid_redirect_uri: Optional[str] = "https://id.silpo.ua/signin-oidc",
@@ -84,13 +82,9 @@ class User:
     def cached_token(self) -> Optional[Token]:
         return SQLiteCache().get(f"token_{self.phone_number}")
 
-    def request_otp(
-        self, delivery_method: Optional[Literal["sms", "viber-sms"]] = None, force: bool = False
-    ) -> "User":
+    def request_otp(self, delivery_method: Optional[Literal["sms", "viber-sms"]] = None, force: bool = False) -> "User":
         if self.token and not force:
-            self.logger.debug(
-                "[request_otp] Already logged in with token scope. Skipping OTP request"
-            )
+            self.logger.debug("[request_otp] Already logged in with token scope. Skipping OTP request")
             return self
 
         auth_cookies = SQLiteCache().get(f"cookie_{self.phone_number}")
@@ -107,16 +101,17 @@ class User:
             "delivery_method": delivery_method,
             "phoneChannelType": 0,
         }
-        self.logger.debug(f"[_request_otp] Requesting OTP with {json} to {full_url}")
+        self.logger.debug("[_request_otp] Requesting OTP with %s to %s", json, full_url)
         resp = self.session.post(full_url, json=json)
         json_data = resp.json()
-        self.logger.debug(f"[_request_otp] Received response: {json_data}")
+        self.logger.debug("[_request_otp] Received response: %s", json_data)
         if not resp.ok:
             if json_data["secondsTillNextOTP"]:
                 self.logger.warning(
-                    f"[_request_otp] Got error from Silpo, need to wait till next OTP: {json_data['secondsTillNextOTP']} seconds. Waiting..."
+                    "[_request_otp] Got error from Silpo, need to wait till next OTP: " "%s seconds. Waiting...",
+                    json_data["secondsTillNextOTP"],
                 )
-                time.sleep(json_data["secondsTillNextOTP"] + random.randint(1, 4))
+                time.sleep(json_data["secondsTillNextOTP"] + random.randint(1, 4))  # noqa: S311
                 return self.request_otp(delivery_method)
             raise SilpoAuthorizationException(f"Error while requesting OTP: {json_data}")
         return self
@@ -124,7 +119,8 @@ class User:
     def _verify_otp(self, otp_code: str) -> "User":
         """
         This method send OTP code to Silpo API to verify it.
-        If OTP code is valid, Silpo API will set cookies required for the next requests, otherwise it will raise an exception.
+        If OTP code is valid, Silpo API will set cookies required for the next requests,
+        otherwise it will raise an exception.
 
         :param otp_code: 6-digit OTP code
         :return: None
@@ -137,14 +133,12 @@ class User:
             "otp": otp_code,
             "phoneChannelType": 0,
         }
-        self.logger.debug(f"[_verify_otp] Verifying OTP with {json} to {full_url}")
+        self.logger.debug("[_verify_otp] Verifying OTP with %s to %s", json, full_url)
         resp = self.session.post(full_url, json=json)
         json_data = resp.json()
-        self.logger.debug(
-            f"[_verify_otp] Received response: {json_data}. With cookies: {resp.cookies}"
-        )
+        self.logger.debug("[_verify_otp] Received response: %s. With cookies: %s", json_data, resp.cookies)
         if not resp.ok or json_data["error"]:
-            raise SilpoOTPInvalidException(f"Error while verifying OTP: {json_data}")
+            raise SilpoOTPInvalidException("Error while verifying OTP: %s", json_data)
         SQLiteCache().set(f"cookie_{self.phone_number}", dict(resp.cookies))
         return self
 
@@ -167,9 +161,7 @@ class User:
         """
         full_url = self.openid_configuration["authorization_endpoint"]
         code_challenge = (
-            base64.urlsafe_b64encode(hashlib.sha256(self.code_verifier.encode()).digest())
-            .rstrip(b"=")
-            .decode("ascii")
+            base64.urlsafe_b64encode(hashlib.sha256(self.code_verifier.encode()).digest()).rstrip(b"=").decode("ascii")
         )
         params = {
             "client_id": self.client_id,
@@ -181,16 +173,19 @@ class User:
             "code_challenge_method": "S256",
             "response_mode": "query",
         }
-        self.logger.debug(f"[_openid_authorize] Authorizing with {params} to {full_url}")
+        self.logger.debug("[_openid_authorize] Authorizing with %s to %s", params, full_url)
         resp = self.session.get(full_url, params=params, cookies=auth_cookies)
         resp.raise_for_status()
         self.logger.debug(
-            f"[_openid_authorize] Received location: {resp.url}. With headers: {resp.headers} and cookies: {resp.cookies}"
+            "[_openid_authorize] Received location: %s. With headers: %s and cookies: %s",
+            resp.url,
+            resp.headers,
+            resp.cookies,
         )
 
         parsed_url = urlparse(resp.url)
         query_params = parse_qs(parsed_url.query)
-        self.logger.debug(f"[_openid_authorize] Parsed query params: {query_params}")
+        self.logger.debug("[_openid_authorize] Parsed query params: %s", query_params)
         auth_code = query_params.get("code", [None])[0]
 
         if auth_code is None:
@@ -206,12 +201,10 @@ class User:
             "code_verifier": self.code_verifier,
             "grant_type": "authorization_code",
         }
-        self.logger.debug(
-            f"[_get_access_token] Getting access token with {form_data} to {full_url}"
-        )
+        self.logger.debug("[_get_access_token] Getting access token with %s to %s", form_data, full_url)
         resp = self.session.post(full_url, data=form_data)
         json_data = resp.json()
-        self.logger.debug(f"[_get_access_token] Received response: {json_data}")
+        self.logger.debug("[_get_access_token] Received response: %s", json_data)
         if not resp.ok:
             raise SilpoAuthorizationException(f"Error while getting access token: {json_data}")
         return Token(**json_data)
@@ -231,7 +224,7 @@ class User:
         code = self._openid_authorize(auth_cookies)
         self.token = self._get_token(code)
         self.logger.debug(
-            f"[refresh_token] Token refreshed with scope: {self.token.scope} | {self.token.expires_in} UTC"
+            "[refresh_token] Token refreshed with scope: %s | %s UTC", self.token.scope, self.token.expires_in
         )
 
     @property
@@ -247,16 +240,14 @@ class User:
 
     def set_token(self, token: Token) -> "User":
         self.token = token
-        self.logger.debug(
-            f"[set_token] Set token scope: {self.token.scope} | {self.token.expires_in} UTC"
-        )
+        self.logger.debug("[set_token] Set token scope: %s | %s UTC", self.token.scope, self.token.expires_in)
         SQLiteCache().set(f"token_{self.phone_number}", token, expires_in=token.expires_in)
         return self
 
     def login(self, otp_code: Optional[str] = None, force: bool = False) -> "User":
         if self.token and not force:
             self.logger.debug(
-                f"[login] Already logged in with token scope: {self.token.scope} | {self.token.expires_in} UTC"
+                "[login] Already logged in with token scope: %s | %s UTC", self.token, self.token.expires_in
             )
             return self
 
@@ -268,10 +259,6 @@ class User:
 
         auth_code = self._openid_authorize(auth_cookies)
         self.token = self._get_token(auth_code)
-        self.logger.debug(
-            f"[login] Logged in with token scope: {self.token.scope} | {self.token.expires_in} UTC"
-        )
-        SQLiteCache().set(
-            f"token_{self.phone_number}", self.token, expires_in=self.token.expires_in
-        )
+        self.logger.debug("[login] Logged in with token scope: %s | %s UTC", self.token.scope, self.token.expires_in)
+        SQLiteCache().set(f"token_{self.phone_number}", self.token, expires_in=self.token.expires_in)
         return self
