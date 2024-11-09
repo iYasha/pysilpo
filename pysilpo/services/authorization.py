@@ -21,9 +21,9 @@ from urllib.parse import parse_qs, urljoin, urlparse
 import requests
 from pydantic import BaseModel, model_validator
 
-from pysilpo.cache import SQLiteCache
-from pysilpo.exceptions import SilpoAuthorizationException, SilpoOTPInvalidException
-from pysilpo.utils import get_jwt_expires_in, get_logger
+from pysilpo.utils.cache import SQLiteCache
+from pysilpo.utils.exceptions import SilpoAuthorizationException, SilpoException, SilpoOTPInvalidException
+from pysilpo.utils.utils import get_jwt_expires_in, get_logger
 
 
 class Token(BaseModel):
@@ -60,7 +60,7 @@ class User:
         openid_redirect_uri: Optional[str] = "https://id.silpo.ua/signin-oidc",
     ):
         if not re.match(self._phone_number_pattern, phone_number):
-            raise ValueError("Invalid phone number, must be in format +380XXYYYYYYY")
+            raise SilpoException("Invalid phone number, must be in format +380XXYYYYYYY")
         self.phone_number = phone_number
         self.session = requests.Session()
         self.client_id = openid_client_id
@@ -141,7 +141,7 @@ class User:
     @staticmethod
     def _enter_cli_otp() -> str:
         while True:
-            otp_code = input("Enter OTP code: ")
+            otp_code = input("Enter the OTP code sent by Silpo: ")
             if not re.match(r"^\d{6}$", otp_code):
                 raise SilpoOTPInvalidException("OTP code must contain 6 digits")
             break

@@ -7,9 +7,10 @@ from urllib.parse import urljoin
 import requests
 from pydantic import BaseModel, Field, PrivateAttr
 
-from pysilpo.authorization import User
-from pysilpo.enums import PayTypeEnum
-from pysilpo.utils import get_logger, subtract_months
+from pysilpo.services.authorization import User
+from pysilpo.utils.enums import PayTypeEnum
+from pysilpo.utils.exceptions import SilpoException
+from pysilpo.utils.utils import get_logger, subtract_months
 
 
 class ChequeRewardModel(BaseModel):
@@ -96,7 +97,7 @@ class ChequeModel(BaseModel):
     @cached_property
     def detail(self) -> ChequeDetailModel:
         if self._cheque_service is None:
-            raise ValueError("Cheque service is not set")
+            raise SilpoException("Cheque service is not set")
         return self._cheque_service.get_detail(
             self.cheque_id,
             self.created,

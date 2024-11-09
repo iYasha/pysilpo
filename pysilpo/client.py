@@ -1,13 +1,17 @@
 from typing import Literal, Optional
 
-from pysilpo.authorization import User
-from pysilpo.cheque import Cheque
-from pysilpo.exceptions import SilpoAuthorizationException
-from pysilpo.product import Product
+from pysilpo.services.authorization import User
+from pysilpo.services.cheque import Cheque
+from pysilpo.services.product import Product
+from pysilpo.services.store import City, Store
+from pysilpo.utils.cache import SQLiteCache
+from pysilpo.utils.exceptions import SilpoAuthorizationException
 
 
 class Silpo:
     product = Product
+    store = Store
+    city = City
 
     def __init__(
         self,
@@ -27,3 +31,7 @@ class Silpo:
                 "User is not authorized. " "Please provide phone number e.g. Silpo(phone_number='+380123456789')"
             )
         return self._cheque
+
+    @classmethod
+    def clear_cache(cls):
+        SQLiteCache().clear()

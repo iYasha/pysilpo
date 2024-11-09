@@ -6,7 +6,7 @@ import requests
 from cryptography.utils import cached_property
 from pydantic import BaseModel, Field
 
-from pysilpo.utils import Cursor
+from pysilpo.utils.cursor import Cursor
 
 
 class SortBy(str, Enum):
