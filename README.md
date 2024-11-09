@@ -56,8 +56,7 @@ for cheque in cheques:
 ```python
 from pysilpo import Silpo
 
-silpo = Silpo()
-for product in silpo.product.all():
+for product in Silpo.product.all():
     print(product.title)
 ```
 

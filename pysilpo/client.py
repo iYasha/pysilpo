@@ -7,6 +7,8 @@ from pysilpo.product import Product
 
 
 class Silpo:
+    product = Product
+
     def __init__(
         self,
         phone_number: Optional[str] = None,
@@ -14,7 +16,6 @@ class Silpo:
     ):
         self._user = None
         self._cheque = None
-        self._product = Product
         if phone_number is not None:
             self._user = User(phone_number=phone_number).request_otp(otp_delivery_method).login()
             self._cheque = Cheque(self._user)
@@ -26,7 +27,3 @@ class Silpo:
                 "User is not authorized. " "Please provide phone number e.g. Silpo(phone_number='+380123456789')"
             )
         return self._cheque
-
-    @property
-    def product(self) -> type[Product]:
-        return self._product

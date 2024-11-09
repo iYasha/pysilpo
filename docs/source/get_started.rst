@@ -53,8 +53,18 @@ Get products
 
     from pysilpo import Silpo
 
-    silpo = Silpo()
-    products = silpo.product.all()
+    products = Silpo.product.all()
 
-    for product in products:
+    for product in products[:10]:
+        print(product.title)
+
+Search products
+
+.. code-block:: python
+
+    from pysilpo import Silpo
+
+    products = Silpo.product.search("молоко")
+
+    for product in products[:10]:
         print(product.title)

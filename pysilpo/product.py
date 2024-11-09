@@ -15,6 +15,7 @@ class SortBy(str, Enum):
     RATING = "rating"
     NAME = "name"
     PRICE = "price"
+    PRODUCTS_LIST = "productsList"
 
 
 class ProductModel(BaseModel):
@@ -88,6 +89,7 @@ class Product:
         cls,
         branch_id=_DEFAULT_BRANCH_ID,
         category_slug: Optional[str] = None,
+        search: Optional[str] = None,
         include_child_categories: bool = True,
         sort_by: SortBy = SortBy.POPULARITY,
         sort_direction: Literal["desc", "asc"] = "desc",
@@ -99,9 +101,11 @@ class Product:
         offset: int = 0,
     ) -> Cursor[ProductModel]:
         """
+        Get all products from the branch
 
         :param branch_id: Branch where to get products from
         :param category_slug: You can get category slug from get_categories method
+        :param search: Search query
         :param include_child_categories: Do you want to include child categories of the category_slug
         :param sort_by: SortBy enum
         :param sort_direction: asc (A-Z) or desc (Z-A)
@@ -125,6 +129,8 @@ class Product:
         }
         if delivery_type:
             query_params["deliveryType"] = delivery_type
+        if search:
+            query_params["search"] = search
 
         def generator(_offset: int):
             query_params["offset"] = _offset
@@ -134,3 +140,20 @@ class Product:
             return [ProductModel(**product) for product in data["items"]], data["total"]
 
         return Cursor(generator=generator, page_size=limit)
+
+    @classmethod
+    def search(
+        cls,
+        search: str,
+        branch_id=_DEFAULT_BRANCH_ID,
+        **kwargs,
+    ) -> Cursor[ProductModel]:
+        """
+        Search for products
+
+        :param search: Search query
+        :param branch_id: Branch where to search products
+        :param kwargs: Other query parameters from Product.all(...)
+        :return:
+        """
+        return cls.all(branch_id=branch_id, search=search, sort_by=SortBy.PRODUCTS_LIST, **kwargs)
