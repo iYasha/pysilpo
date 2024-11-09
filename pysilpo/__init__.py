@@ -1,11 +1,9 @@
 import logging
 import os
 
-from pysilpo.authorization import User
-from pysilpo.cheque import Cheque
-from pysilpo.product import Product
+from pysilpo.client import Silpo
 
-__version__ = "0.2.1"
+__version__ = "1.0.0"
 
 DEBUG = int(os.getenv("DEBUG", "0"))
 
@@ -15,4 +13,4 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-__all__ = ("__version__", "User", "Cheque", "Product")
+__all__ = ("__version__", "Silpo")

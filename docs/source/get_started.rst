@@ -34,21 +34,27 @@ Here is a simple example of how to fetch all cheques for a user by date range:
 
 .. code-block:: python
 
-   from pysilpo import User, Cheque
-   from datetime import datetime
+    from pysilpo import Silpo
+    from datetime import datetime
 
-   user = (
-       User(
-           phone_number="+380123456789",
-       )
-       .request_otp()
-       .login()
-   )
+    silpo = Silpo(phone_number="+380123456789")
 
-   cheques = Cheque(user).get_all(
-       date_from=datetime(2024, 7, 19), date_to=datetime(2024, 8, 19)
-   )
+    cheques = silpo.cheque.all(
+        date_from=datetime(2024, 7, 19), date_to=datetime(2024, 8, 19)
+    )
 
-   for cheque in cheques:
-       print(cheque.sum_balance)
-       print(cheque.detail.positions)
+    for cheque in cheques:
+        print(cheque.sum_balance)
+        print(cheque.detail.positions)
+
+Get products
+
+.. code-block:: python
+
+    from pysilpo import Silpo
+
+    silpo = Silpo()
+    products = silpo.product.all()
+
+    for product in products:
+        print(product.title)

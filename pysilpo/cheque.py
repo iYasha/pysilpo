@@ -130,7 +130,7 @@ class Cheque:
         resp.raise_for_status()
         return ChequeDetailModel(**resp.json())
 
-    def get_all(
+    def all(
         self,
         date_from: Optional[datetime] = None,
         date_to: Optional[datetime] = None,

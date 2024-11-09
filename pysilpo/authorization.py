@@ -53,7 +53,6 @@ class User:
     def __init__(
         self,
         phone_number: str,
-        otp_delivery_method: Literal["sms", "viber-sms"] = "sms",
         openid_client_id: Optional[str] = "profile--profile--cabinet",
         openid_scope: Optional[str] = "openid public-my profile--security--identity-service:internal-api--call "
         "core--core--media-service:media--upload payments--payments--wallet-service:cards--read-my "
@@ -64,7 +63,6 @@ class User:
             raise ValueError("Invalid phone number, must be in format +380XXYYYYYYY")
         self.phone_number = phone_number
         self.session = requests.Session()
-        self.otp_delivery_method = otp_delivery_method
         self.client_id = openid_client_id
         self.scope = openid_scope
         self.redirect_uri = openid_redirect_uri
@@ -82,7 +80,7 @@ class User:
     def cached_token(self) -> Optional[Token]:
         return SQLiteCache().get(f"token_{self.phone_number}")
 
-    def request_otp(self, delivery_method: Optional[Literal["sms", "viber-sms"]] = None, force: bool = False) -> "User":
+    def request_otp(self, delivery_method: Literal["sms", "viber-sms"] = "sms", force: bool = False) -> "User":
         if self.token and not force:
             self.logger.debug("[request_otp] Already logged in with token scope. Skipping OTP request")
             return self
@@ -92,8 +90,6 @@ class User:
             self.logger.debug("[request_otp] Have cookies for authorization. Skipping OTP request")
             return self
 
-        if delivery_method is None:
-            delivery_method = self.otp_delivery_method
         full_url = urljoin(self._base_auth_domain, "/api/v2/Login/ByPhone")
         json = {
             "phone": self.phone_number,
@@ -247,7 +243,7 @@ class User:
     def login(self, otp_code: Optional[str] = None, force: bool = False) -> "User":
         if self.token and not force:
             self.logger.debug(
-                "[login] Already logged in with token scope: %s | %s UTC", self.token, self.token.expires_in
+                "[login] Already logged in with token scope: %s | %s UTC", self.token.scope, self.token.expires_in
             )
             return self
 

@@ -34,25 +34,31 @@ pip install pysilpo
 
 ## Usage
 
+### Get authorized user cheques
+
 ```python
-from pysilpo import User, Cheque
+from pysilpo import Silpo
 from datetime import datetime
 
-user = (
-    User(
-        phone_number="+380123456789",
-    )
-    .request_otp()
-    .login()
-)
+silpo = Silpo(phone_number="+380123456789")
 
-cheques = Cheque(user).get_all(
+cheques = silpo.cheque.all(
     date_from=datetime(2024, 7, 19), date_to=datetime(2024, 8, 19)
 )
 
 for cheque in cheques:
     print(cheque.sum_balance)
     print(cheque.detail.positions)
+```
+
+### Get Silpo products
+
+```python
+from pysilpo import Silpo
+
+silpo = Silpo()
+for product in silpo.product.all():
+    print(product.title)
 ```
 
 ## Change Log

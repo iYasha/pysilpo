@@ -61,7 +61,7 @@ class CategoryModel(BaseModel):
 
     @cached_property
     def products(self) -> Cursor[ProductModel]:
-        return Product.get_all(category_slug=self.slug, include_child_categories=False)
+        return Product.all(category_slug=self.slug, include_child_categories=False)
 
 
 class Product:
@@ -72,7 +72,7 @@ class Product:
     _DEFAULT_BRANCH_ID = "00000000-0000-0000-0000-000000000000"
 
     @classmethod
-    def get_categories(cls, branch_id=_DEFAULT_BRANCH_ID) -> Cursor[CategoryModel]:
+    def categories(cls, branch_id=_DEFAULT_BRANCH_ID) -> Cursor[CategoryModel]:
         full_url = cls._CATEGORIES_URL.format(branch_id=branch_id)
 
         def generator(_offset: int):
@@ -84,7 +84,7 @@ class Product:
         return Cursor[CategoryModel](generator=generator, page_size=1000)
 
     @classmethod
-    def get_all(
+    def all(
         cls,
         branch_id=_DEFAULT_BRANCH_ID,
         category_slug: Optional[str] = None,
