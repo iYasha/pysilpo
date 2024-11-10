@@ -7,9 +7,10 @@ from urllib.parse import urljoin
 import requests
 from pydantic import BaseModel, Field, PrivateAttr
 
-from pysilpo.authorization import User
-from pysilpo.enums import PayTypeEnum
-from pysilpo.utils import get_logger, subtract_months
+from pysilpo.services.authorization import User
+from pysilpo.utils.enums import PayTypeEnum
+from pysilpo.utils.exceptions import SilpoException
+from pysilpo.utils.utils import get_logger, subtract_months
 
 
 class ChequeRewardModel(BaseModel):
@@ -42,7 +43,10 @@ class ChequePositionModel(BaseModel):
     def get_full_image_url(self, width: int = 480, height: int = 480) -> Optional[str]:
         if self.image_url is not None:
             size = f"{width}x{height}wwm"
-            return f"https://content.silpo.ua/sku/ecommerce/{int(self.lager_id / 1e4)}/{size}/{self.lager_id}_{size}_{self.image_url}"
+            return (
+                f"https://content.silpo.ua/sku/ecommerce/{int(self.lager_id / 1e4)}"
+                f"/{size}/{self.lager_id}_{size}_{self.image_url}"
+            )
         return None
 
     class Meta:
@@ -93,7 +97,7 @@ class ChequeModel(BaseModel):
     @cached_property
     def detail(self) -> ChequeDetailModel:
         if self._cheque_service is None:
-            raise ValueError("Cheque service is not set")
+            raise SilpoException("Cheque service is not set")
         return self._cheque_service.get_detail(
             self.cheque_id,
             self.created,
@@ -111,16 +115,14 @@ class Cheque:
     def __init__(self, user: User):
         self.user = user
 
-    def get_detail(
-        self, cheque_id: int, created: datetime, fill_id: int, loyalty_fact_id: int
-    ) -> ChequeDetailModel:
+    def get_detail(self, cheque_id: int, created: datetime, fill_id: int, loyalty_fact_id: int) -> ChequeDetailModel:
         payload = {
             "filId": fill_id,
             "chequeId": cheque_id,
             "created": created.isoformat(),
             "loyaltyFactId": loyalty_fact_id,
         }
-        self.logger.debug(f"Fetching cheque detail for {payload}")
+        self.logger.debug("Fetching cheque detail for %s", payload)
         resp = requests.post(
             self._CHEQUE_DETAIL_URL,
             json=payload,
@@ -129,7 +131,7 @@ class Cheque:
         resp.raise_for_status()
         return ChequeDetailModel(**resp.json())
 
-    def get_all(
+    def all(
         self,
         date_from: Optional[datetime] = None,
         date_to: Optional[datetime] = None,
@@ -155,7 +157,7 @@ class Cheque:
                 "dateStart": current_date_from.isoformat(),
                 "dateEnd": current_date_to.isoformat(),
             }
-            self.logger.debug(f"Fetching cheques from {current_date_from} to {current_date_to}")
+            self.logger.debug("Fetching cheques from %s to %s", current_date_from, current_date_to)
             resp = requests.post(
                 self._ALL_CHEQUES_URL,
                 json=payload,
@@ -184,7 +186,5 @@ class Cheque:
             current_date_to = subtract_months(current_date_from, 3)
             current_date_from = max(
                 subtract_months(current_date_to, 3),
-                subtract_months(datetime.fromisoformat(data[-1]["created"]), 3)
-                if date_from is None
-                else date_from,
+                subtract_months(datetime.fromisoformat(data[-1]["created"]), 3) if date_from is None else date_from,
             )

@@ -66,7 +66,7 @@ class SQLiteCache:
         if result:
             value = result[0]
             if self.use_pickle:
-                return pickle.loads(value)  # Deserialize using pickle
+                return pickle.loads(value)  # noqa: S301
             return value
         return None  # Not found
 
@@ -110,7 +110,7 @@ class SQLiteCache:
         rows = self.cursor.fetchall()
         # If using pickle, deserialize each value
         if self.use_pickle:
-            return [(key, pickle.loads(value)) for key, value in rows]
+            return [(key, pickle.loads(value)) for key, value in rows]  # noqa: S301
         return rows
 
     def close(self):

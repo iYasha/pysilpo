@@ -7,7 +7,7 @@ name = "pysilpo"
 dynamic = ["version"]
 description = "UNOFFICIAL API client for Silpo (Ukrainian supermarket chain)"
 readme = "README.md"
-license = {file="LICENSE"}
+license = { file = "LICENSE" }
 requires-python = ">=3.9"
 authors = [
     { name = "iYasha" },
@@ -31,19 +31,19 @@ classifiers = [
 ]
 #
 dependencies = [
-    "pydantic>=2.0,<3.0",  # Pydantic 2.0 supports Python 3.9 and above
+    "pydantic>=2.0,<3.0", # Pydantic 2.0 supports Python 3.9 and above
     "PyJWT>=2.8,<3.0"
 ]
 
 [project.optional-dependencies]
-docs = [ "sphinx>=7"]
+docs = ["sphinx>=7"]
 
 [project.urls]
 Source = "https://github.com/iYasha/pysilpo"
 Tracker = "https://github.com/iYasha/pysilpo/issues"
 
 [tool.setuptools.dynamic]
-version = {attr = "pysilpo.__version__"}
+version = { attr = "pysilpo.__version__" }
 
 [tool.mypy]
 strict = true
@@ -56,39 +56,40 @@ module = ["test.*"]
 disable_error_code = ["no-untyped-def", "no-untyped-call"]
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 
 [tool.ruff.lint]
 select = [
-  "E", "F", "W", # flake8
-  "B",           # flake8-bugbear
-  "I",           # isort
-  "ARG",         # flake8-unused-arguments
-  "C4",          # flake8-comprehensions
-  "EM",          # flake8-errmsg
-  "ICN",         # flake8-import-conventions
-  "G",           # flake8-logging-format
-  "PGH",         # pygrep-hooks
-  "PIE",         # flake8-pie
-  "PL",          # pylint
-  "PTH",         # flake8-use-pathlib
-  "RET",         # flake8-return
-  "RUF",         # Ruff-specific
-  "S",           # flake8-bandit
-  "SIM",         # flake8-simplify
-  "T20",         # flake8-print
-  "UP",          # pyupgrade
-  "YTT",         # flake8-2020
-  "EXE",         # flake8-executable
+    "E", "F", "W", # flake8
+    "B", # flake8-bugbear
+    "I", # isort
+    "ARG", # flake8-unused-arguments
+    "C4", # flake8-comprehensions
+    "EM", # flake8-errmsg
+    "ICN", # flake8-import-conventions
+    "G", # flake8-logging-format
+    "PGH", # pygrep-hooks
+    "PIE", # flake8-pie
+    "PL", # pylint
+    "PTH", # flake8-use-pathlib
+    "RET", # flake8-return
+    "RUF", # Ruff-specific
+    "S", # flake8-bandit
+    "SIM", # flake8-simplify
+    "T20", # flake8-print
+    "UP", # pyupgrade
+    "YTT", # flake8-2020
+    "EXE", # flake8-executable
 ]
 ignore = [
-  "PLR",    # Design related pylint codes
-  "EM101",  # Exception must not use a string literal, assign to variable first
-  "EM102",  # Exception must not use an f-string literal, assign to variable first
-  "ARG002", # Unused method argument:
-  "S101",   # Use of `assert` detected
-  "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
-  "PLW2901", # `for` loop variable `value` overwritten by assignment target
+    "PLR", # Design related pylint codes
+    "EM101", # Exception must not use a string literal, assign to variable first
+    "EM102", # Exception must not use an f-string literal, assign to variable first
+    "ARG002", # Unused method argument:
+    "S101", # Use of `assert` detected
+    "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+    "PLW2901", # `for` loop variable `value` overwritten by assignment target
+    "S113",
 ]
 unfixable = []
 exclude = []
@@ -106,8 +107,11 @@ exclude_lines = [
     "_use_c = true",
     "if __name__ == '__main__':",
     "if TYPE_CHECKING:"
-    ]
+]
 partial_branches = ["if (.*and +)*not _use_c( and.*)*:"]
 
 [tool.coverage.html]
 directory = "htmlcov"
+
+[tool.rstcheck]
+ignore_messages = ["Hyperlink target \".*\" is not referenced"]

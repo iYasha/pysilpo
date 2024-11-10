@@ -12,4 +12,4 @@ Key Features
 - **OTP Authorization**: Silpo uses OTP authorization to authenticate users and library fully supports this feature. It means you can easily authenticate users and fetch data from Silpo's API using phone number and OTP code.
 - **Cheque Information**: The library provides a simple interface for fetching cheque information for a user by date range.
 
-As you start exploring **pysilpo**, please refer to the :ref:`installation` and :ref:`debugging` sections for detailed instructions.
+As you start exploring **pysilpo**, please refer to the :ref:`installation_section` and :ref:`debugging_section` sections for detailed instructions.
