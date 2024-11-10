@@ -53,7 +53,8 @@ Get products
 
     from pysilpo import Silpo
 
-    products = Silpo.product.all()
+    specific_category = Silpo.product.categories()[0]
+    products = Silpo.product.all(category_slug=specific_category.slug)
 
     for product in products[:10]:
         print(product.title)
@@ -68,3 +69,16 @@ Search products
 
     for product in products[:10]:
         print(product.title)
+
+Get products from concrete branch
+
+.. code-block:: python
+
+    from pysilpo import Silpo
+
+    silpo = Silpo()
+
+    silpo_city = silpo.city.get("odesa")
+    odesa_store = silpo_city.stores[0]
+    for product in silpo.product.search("молоко", branch_id=odesa_store.branch_id):
+        print(f"Name: {product.title}\nPrice: {product.price}\n")

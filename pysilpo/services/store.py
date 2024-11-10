@@ -35,6 +35,12 @@ class CityModel(BaseModel):
 
 
 class StoreModel(BaseModel):
+    def __init__(self, **data):
+        super().__init__(**data)
+        filial_id = data.get("filial_id")
+        if filial_id is not None:
+            self.filial_id = filial_id
+
     id: str = Field(..., alias="id")
     images: list[dict] = Field(..., alias="images")
     electricity_state: int = Field(..., alias="electricityState")
@@ -59,8 +65,10 @@ class StoreModel(BaseModel):
     updated_at: Optional[str] = Field(None, alias="updatedAt")
 
     @cached_property
-    def branch_id(self) -> str:
+    def branch_id(self) -> Optional[str]:
         try:
+            if self.filial_id is None:
+                return None
             return Store.get_branch_id(self.filial_id)[0].branch_id
         except IndexError:
             raise SilpoRequestException(f"Branch not found for filial_id: {self.filial_id}") from None

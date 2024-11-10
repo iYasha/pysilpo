@@ -86,7 +86,11 @@ class Cursor(Generic[T]):
         :return: Total count of fetched items if it's more than `total` or `total` otherwise
         """
         if self.total_count is None:
-            self.fetch_new_page(0)
+            try:
+                self.fetch_new_page(0)
+            except IndexError:
+                self.total_count = 0
+                return 0
         return self.fetched_count if self.fetched_count >= self.total_count else self.total_count
 
     def __repr__(self):

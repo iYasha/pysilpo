@@ -7,6 +7,7 @@ from cryptography.utils import cached_property
 from pydantic import BaseModel, Field
 
 from pysilpo.utils.cursor import Cursor
+from pysilpo.utils.exceptions import SilpoException, SilpoRequestException
 
 
 class SortBy(str, Enum):
@@ -117,6 +118,8 @@ class Product:
         """
         # TODO: Add support for other query parameters, e.g. get data by products, productsIds, productsSlugs,
         #  category, set, mustHavePromotion, search, offersIds, isFavorite, isCarousel; Filter by etc.
+        if category_slug is None and search is None:
+            raise SilpoException("You must provide either category_slug or search query")
         full_url = cls._PRODUCTS_URL.format(branch_id=branch_id)
         query_params = {
             "limit": limit,
@@ -135,7 +138,8 @@ class Product:
         def generator(_offset: int):
             query_params["offset"] = _offset
             resp = requests.get(full_url, params=query_params)
-            resp.raise_for_status()
+            if not resp.ok:
+                raise SilpoRequestException(f"Failed to fetch products: {resp.text}")
             data = resp.json()
             return [ProductModel(**product) for product in data["items"]], data["total"]
 
