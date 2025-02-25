@@ -3,7 +3,7 @@ import os
 
 from pysilpo.client import Silpo
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 DEBUG = int(os.getenv("DEBUG", "0"))
 

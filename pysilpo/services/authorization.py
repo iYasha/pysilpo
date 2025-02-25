@@ -22,7 +22,12 @@ import requests
 from pydantic import BaseModel, model_validator
 
 from pysilpo.utils.cache import SQLiteCache
-from pysilpo.utils.exceptions import SilpoAuthorizationException, SilpoException, SilpoOTPInvalidException
+from pysilpo.utils.exceptions import (
+    NoOpenIDAuthCodeException,
+    SilpoAuthorizationException,
+    SilpoException,
+    SilpoOTPInvalidException,
+)
 from pysilpo.utils.utils import get_jwt_expires_in, get_logger
 
 
@@ -185,7 +190,7 @@ class User:
         auth_code = query_params.get("code", [None])[0]
 
         if auth_code is None:
-            raise SilpoAuthorizationException("No auth code in response for OpenID authorization")
+            raise NoOpenIDAuthCodeException("No auth code in response for OpenID authorization")
         return auth_code
 
     def _get_token(self, auth_code: str) -> Token:
@@ -240,7 +245,7 @@ class User:
         SQLiteCache().set(f"token_{self.phone_number}", token, expires_in=token.expires_in)
         return self
 
-    def login(self, otp_code: Optional[str] = None, force: bool = False) -> "User":
+    def login(self, otp_code: Optional[str] = None, force: bool = False, retry_no: int = 0) -> "User":
         if self.token and not force:
             self.logger.debug(
                 "[login] Already logged in with token scope: %s | %s UTC", self.token.scope, self.token.expires_in
@@ -253,7 +258,16 @@ class User:
                 otp_code = self._enter_cli_otp()
             self._verify_otp(otp_code)
 
-        auth_code = self._openid_authorize(auth_cookies)
+        try:
+            auth_code = self._openid_authorize(auth_cookies)
+        except NoOpenIDAuthCodeException as e:
+            if retry_no >= 2:
+                raise SilpoAuthorizationException(
+                    "Failed to get OpenID authorization code after 3 retries. Please try again later."
+                ) from e
+            self.logger.warning("[login] %s. Trying to request OTP and login again", e)
+            SQLiteCache().clear()
+            return self.login(otp_code=otp_code, force=True, retry_no=retry_no + 1)
         self.token = self._get_token(auth_code)
         self.logger.debug("[login] Logged in with token scope: %s | %s UTC", self.token.scope, self.token.expires_in)
         SQLiteCache().set(f"token_{self.phone_number}", self.token, expires_in=self.token.expires_in)

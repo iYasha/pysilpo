@@ -10,5 +10,9 @@ class SilpoAuthorizationException(SilpoRequestException):
     pass
 
 
+class NoOpenIDAuthCodeException(SilpoAuthorizationException):
+    pass
+
+
 class SilpoOTPInvalidException(SilpoAuthorizationException):
     pass
