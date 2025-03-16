@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import jwt
 
@@ -14,14 +14,47 @@ def get_jwt_expires_in(jwt_token: str) -> int:
 
 
 def subtract_months(date: datetime, months: int) -> datetime:
-    # Calculate target year and month
-    target_month = date.month - months
-    target_year = date.year + (target_month - 1) // 12  # Adjust year if month < 1
-    target_month = (target_month - 1) % 12 + 1  # Adjust month to range 1-12
+    """
+    Subtract a specified number of months from a datetime object.
 
-    # Calculate last day of the target month
-    last_day_of_month = (datetime(target_year, target_month + 1, 1) - timedelta(days=1)).day
-    target_day = min(date.day, last_day_of_month)  # Ensure valid day of month
+    Args:
+        date: A datetime object to subtract months from
+        months: Number of months to subtract (positive integer)
 
-    # Return new date with adjusted year, month, and day
-    return datetime(target_year, target_month, target_day, date.hour, date.minute, date.second)
+    Returns:
+        A new datetime object with the months subtracted
+    """
+    if months < 0:
+        raise ValueError("months should be a positive integer")
+
+    year = date.year
+    month = date.month
+
+    month -= months
+
+    while month <= 0:
+        year -= 1
+        month += 12
+
+    if date.day > 28:
+        if month == 2:
+            last_day = 29 if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0) else 28
+        elif month in [4, 6, 9, 11]:
+            last_day = 30
+        else:
+            last_day = 31
+
+        new_day = min(date.day, last_day)
+    else:
+        new_day = date.day
+
+    return datetime(
+        year=year,
+        month=month,
+        day=new_day,
+        hour=date.hour,
+        minute=date.minute,
+        second=date.second,
+        microsecond=date.microsecond,
+        tzinfo=date.tzinfo,
+    )

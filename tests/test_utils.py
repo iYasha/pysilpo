@@ -1,6 +1,9 @@
+from datetime import datetime, timezone
+
 import pytest
 
-from pysilpo.utils import Cursor
+from pysilpo.utils.cursor import Cursor
+from pysilpo.utils.utils import subtract_months
 
 
 class DummyGenerator:
@@ -119,3 +122,144 @@ class TestCursor:
         assert cursor[:1000] == list(cursor.generator.values)
 
         assert cursor[1000::2] == []
+
+
+class TestSubtractMonths:
+    """Test suite for the subtract_months function."""
+
+    def test_basic_subtraction(self):
+        """Test basic month subtraction that doesn't cross year boundary"""
+        date = datetime(2025, 3, 15)
+        result = subtract_months(date, 1)
+        assert result == datetime(2025, 2, 15)
+
+        date = datetime(2025, 5, 10)
+        result = subtract_months(date, 2)
+        assert result == datetime(2025, 3, 10)
+
+    def test_cross_year_boundary(self):
+        """Test subtraction that crosses year boundary"""
+        date = datetime(2025, 1, 15)
+        result = subtract_months(date, 1)
+        assert result == datetime(2024, 12, 15)
+
+        date = datetime(2025, 3, 10)
+        result = subtract_months(date, 15)
+        assert result == datetime(2023, 12, 10)
+
+    def test_multiple_year_cross(self):
+        """Test subtraction that crosses multiple years"""
+        date = datetime(2025, 5, 20)
+        result = subtract_months(date, 25)
+        assert result == datetime(2023, 4, 20)
+
+    def test_end_of_month_handling(self):
+        """Test handling of month end dates"""
+        # January 31 -> December 31 (same day)
+        date = datetime(2025, 1, 31)
+        result = subtract_months(date, 1)
+        assert result == datetime(2024, 12, 31)
+
+        # March 31 -> February (should adjust to Feb 28/29)
+        date = datetime(2025, 3, 31)
+        result = subtract_months(date, 1)
+        assert result == datetime(2025, 2, 28)
+
+        # Leap year test
+        date = datetime(2024, 3, 31)
+        result = subtract_months(date, 1)
+        assert result == datetime(2024, 2, 29)
+
+    def test_month_length_differences(self):
+        """Test transitions between months with different lengths"""
+        # May 31 -> April 30
+        date = datetime(2025, 5, 31)
+        result = subtract_months(date, 1)
+        assert result == datetime(2025, 4, 30)
+
+        # May 30 -> April 30 (same day)
+        date = datetime(2025, 5, 30)
+        result = subtract_months(date, 1)
+        assert result == datetime(2025, 4, 30)
+
+        # December 31 -> November 30
+        date = datetime(2025, 12, 31)
+        result = subtract_months(date, 1)
+        assert result == datetime(2025, 11, 30)
+
+    def test_preserves_time_components(self):
+        """Test that time components are preserved"""
+        date = datetime(2025, 3, 15, 14, 30, 45, 123456)
+        result = subtract_months(date, 1)
+        assert result == datetime(2025, 2, 15, 14, 30, 45, 123456)
+
+    def test_preserves_timezone(self):
+        """Test that timezone information is preserved"""
+        date = datetime(2025, 3, 15, 14, 30, 45, tzinfo=timezone.utc)
+        result = subtract_months(date, 1)
+        assert result == datetime(2025, 2, 15, 14, 30, 45, tzinfo=timezone.utc)
+
+    def test_zero_months(self):
+        """Test subtracting zero months returns the same date"""
+        date = datetime(2025, 3, 15)
+        result = subtract_months(date, 0)
+        assert result == date
+
+    def test_negative_months(self):
+        """Test that negative months raises a ValueError"""
+        date = datetime(2025, 3, 15)
+        with pytest.raises(ValueError):
+            subtract_months(date, -1)
+
+    def test_large_month_subtraction(self):
+        """Test with large number of months"""
+        date = datetime(2025, 3, 15)
+        result = subtract_months(date, 100)
+        assert result == datetime(2016, 11, 15)
+
+    def test_february_edge_cases(self):
+        """Test specific February edge cases, especially around leap years"""
+        # Non-leap year: March 29, 30, 31 -> February 28
+        date = datetime(2025, 3, 29)
+        result = subtract_months(date, 1)
+        assert result == datetime(2025, 2, 28)
+
+        date = datetime(2025, 3, 30)
+        result = subtract_months(date, 1)
+        assert result == datetime(2025, 2, 28)
+
+        date = datetime(2025, 3, 31)
+        result = subtract_months(date, 1)
+        assert result == datetime(2025, 2, 28)
+
+        # Leap year: March 29 -> February 29
+        date = datetime(2024, 3, 29)
+        result = subtract_months(date, 1)
+        assert result == datetime(2024, 2, 29)
+
+        # Leap year: March 30, 31 -> February 29
+        date = datetime(2024, 3, 30)
+        result = subtract_months(date, 1)
+        assert result == datetime(2024, 2, 29)
+
+        date = datetime(2024, 3, 31)
+        result = subtract_months(date, 1)
+        assert result == datetime(2024, 2, 29)
+
+    @pytest.mark.parametrize(
+        "input_date,months,expected",
+        [
+            # Basic cases
+            (datetime(2025, 5, 15), 1, datetime(2025, 4, 15)),
+            (datetime(2025, 5, 15), 3, datetime(2025, 2, 15)),
+            # Year boundary
+            (datetime(2025, 2, 15), 3, datetime(2024, 11, 15)),
+            # Month length adjustments
+            (datetime(2025, 5, 31), 1, datetime(2025, 4, 30)),
+            (datetime(2025, 3, 31), 1, datetime(2025, 2, 28)),
+            (datetime(2024, 3, 31), 1, datetime(2024, 2, 29)),
+        ],
+    )
+    def test_parameterized_cases(self, input_date, months, expected):
+        """Test multiple scenarios with parameterization"""
+        assert subtract_months(input_date, months) == expected
